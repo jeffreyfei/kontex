@@ -43,19 +43,19 @@ STOPWORDS = set([
     "from",
     "further",
     "had",
-    "hadn't"
+    "hadn't",
     "has",
-    "hasn't"
+    "hasn't",
     "have",
     "haven't",
     "having",
     "he",
-    "he'd"
-    "he'll"
-    "he's"
+    "he'd",
+    "he'll",
+    "he's",
     "her",
     "here",
-    "here's"
+    "here's",
     "hers",
     "herself",
     "him",
@@ -81,7 +81,7 @@ STOPWORDS = set([
     "me",
     "more",
     "most",
-    "mustn't"
+    "mustn't",
     "my",
     "myself",
     "no",
