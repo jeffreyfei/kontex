@@ -51,26 +51,27 @@ def main(documents):
     for document in documents:
         title, body = pop_subject_from_document(document)
         paragraphs = [p for p in body.split('\n') if p]
-        for paragraph in paragraphs:
-            sentences = sent_tokenize(paragraph)
-            sentence_data = []
-            word_tokens = tokenize(sentences)
-            sentence_title_similarities = find_title_similarity_measure(title, sentences)
-            # start processing different attributes of every sentence
-            sentence_tf_isf = find_avg_tfidf(transform_tfidf(word_tokens).toarray())
-            max_sentence_length = find_max_sentence_length(sentences)
-            for i, sentence in enumerate(sentences):
-                sentence_length = len(sentence) / float(max_sentence_length)
-                sentence_pos = (len(sentences) - i) / float(len(sentences))
+        doc = " ".join(paragraphs)
+        sentences = sent_tokenize(doc)
+        sentence_data = []
 
-                sentence_data.append({
-                    'sentence': sentence,
-                    'avg_tf_isf': sentence_tf_isf[i],
-                    'len_ratio': sentence_length,
-                    'pos': sentence_pos,
-                    'simlarity_to_title': sentence_title_similarities[i]
-                })
-            print sentence_data
+        word_tokens = tokenize(sentences)
+        sentence_title_similarities = find_title_similarity_measure(title, sentences)
+        # start processing different attributes of every sentence
+        sentence_tf_isf = find_avg_tfidf(transform_tfidf(word_tokens).toarray())
+        max_sentence_length = find_max_sentence_length(sentences)
+        for i, sentence in enumerate(sentences):
+            sentence_length = len(sentence) / float(max_sentence_length)
+            sentence_pos = (len(sentences) - i) / float(len(sentences))
+
+            sentence_data.append({
+                'sentence': sentence,
+                'avg_tf_isf': sentence_tf_isf[i],
+                'len_ratio': sentence_length,
+                'pos': sentence_pos,
+                'simlarity_to_title': sentence_title_similarities[i]
+            })
+        print sentence_data
 
 main([train_data.data[1]])
 
