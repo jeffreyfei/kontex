@@ -1,8 +1,8 @@
 # kontex
 
-A machine learning summarizer inspired by the conference paper "Automatic Text Summarization Using a Machine Learning Approach" in the [16th Brazilian Symposium on Artificial Intelligence](https://link.springer.com/book/10.1007/3-540-36127-8) Conference in 2002.
+A machine learning summarizer inspired by the study "Automatic Text Summarization Using a Machine Learning Approach" in the [16th Brazilian Symposium on Artificial Intelligence](https://link.springer.com/book/10.1007/3-540-36127-8) Conference in 2002.
 
-The purpose of the model is to grab extractive summaries of a document by extracting sentences, categorized by:
+The purpose of the model is to grab extractive summaries of a document by ranking sentences, categorized by:
   1. Mean-TF-ISF
   2. Sentence Length
   3. Sentence Position
@@ -17,6 +17,6 @@ The purpose of the model is to grab extractive summaries of a document by extrac
   12. Occurrence of anaphors
   13. Occurrence of non-essential information
   
-We then run this model against a normal extractive summarizer with the [20 news groups dataset](http://qwone.com/~jason/20Newsgroups/) to train it to grab extractive summaries.
+We then run this model against a normal extractive summarizer with the [20 news groups dataset](http://qwone.com/~jason/20Newsgroups/) to train it to grab summaries.
 
 This project was made for "human learning of machine learning" - Jeffrey Fei
