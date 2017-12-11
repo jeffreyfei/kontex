@@ -1,6 +1,8 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer, TfidfVectorizer
 from nltk.tokenize import sent_tokenize
+from nltk.tokenize import word_tokenize
+from nltk import pos_tag
 
 from constants import STOPWORDS
 from preprocessor import LancasterTokenizer, pop_subject_from_document
@@ -47,6 +49,26 @@ def find_title_similarity_measure(title, sentences):
     pairwise_similarity = tfidf * tfidf.T
     return pairwise_similarity.A[0]
 
+def find_main_concepts(sentences):
+    word_ranking = {}
+    for sentence in sentences:
+        tagged_words = pos_tag(word_tokenize(sentence))
+        for tagged_word in tagged_words:
+            word = tagged_word[0]
+            tag = tagged_word[1]
+            if tag == 'NN':
+                if word in word_ranking:
+                    word_ranking[word] += 1
+                else:
+                    word_ranking[word] = 1
+    return sorted(word_ranking, key=word_ranking.get, reverse=True)[:15]
+
+def contains_main_concepts(sentence, concepts):
+    for word in word_tokenize(sentence):
+        if word in concepts:
+            return True
+    return False
+
 def main(documents):
     for document in documents:
         title, body = pop_subject_from_document(document)
@@ -60,6 +82,7 @@ def main(documents):
         # start processing different attributes of every sentence
         sentence_tf_isf = find_avg_tfidf(transform_tfidf(word_tokens).toarray())
         max_sentence_length = find_max_sentence_length(sentences)
+        concepts = find_main_concepts(sentences)
         for i, sentence in enumerate(sentences):
             sentence_length = len(sentence) / float(max_sentence_length)
             sentence_pos = (len(sentences) - i) / float(len(sentences))
@@ -69,9 +92,10 @@ def main(documents):
                 'avg_tf_isf': sentence_tf_isf[i],
                 'len_ratio': sentence_length,
                 'pos': sentence_pos,
-                'simlarity_to_title': sentence_title_similarities[i]
+                'simlarity_to_title': sentence_title_similarities[i],
+                'has_main_concepts': contains_main_concepts(sentence, concepts)
             })
-        print sentence_data
+        print(sentence_data)
 
-main([train_data.data[1]])
+main(train_data.data[:1])
 
