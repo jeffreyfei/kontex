@@ -69,6 +69,13 @@ def contains_main_concepts(sentence, concepts):
             return True
     return False
 
+def contains_proper_nouns(sentence):
+    tagged_words = pos_tag(word_tokenize(sentence))
+    for tagged_word in tagged_words:
+        if tagged_word[1] == 'NNP':
+            return True
+    return False
+
 def main(documents):
     for document in documents:
         title, body = pop_subject_from_document(document)
@@ -93,7 +100,8 @@ def main(documents):
                 'len_ratio': sentence_length,
                 'pos': sentence_pos,
                 'simlarity_to_title': sentence_title_similarities[i],
-                'has_main_concepts': contains_main_concepts(sentence, concepts)
+                'has_main_concepts': contains_main_concepts(sentence, concepts),
+                'has_proper_noun': contains_proper_nouns(sentence)
             })
         print(sentence_data)
 
