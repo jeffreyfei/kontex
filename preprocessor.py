@@ -1,7 +1,6 @@
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem.porter import *
-from constants import STOPWORDS
 
 class LancasterTokenizer(object):
     def __init__(self):

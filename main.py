@@ -2,8 +2,9 @@ import math
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from sklearn.datasets import fetch_20newsgroups
 from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
 from nltk import pos_tag
-from constants import STOPWORDS
+
 from rake import Rake
 from preprocessor import LancasterTokenizer, pop_subject_from_document
 
@@ -11,7 +12,10 @@ train_data = fetch_20newsgroups(subset='train', remove=('footers', 'quotes'))
 
 
 def tokenize(sentence):
-    vectorizer = CountVectorizer(stop_words=STOPWORDS, tokenizer=LancasterTokenizer())
+    vectorizer = CountVectorizer(
+        stop_words=stopwords.words('english'),
+        tokenizer=LancasterTokenizer()
+    )
     tags = vectorizer.fit_transform(sentence)
     return tags
 
@@ -119,7 +123,7 @@ def main(documents):
                 'has_main_concepts': contains_main_concepts(sentence, concepts),
                 'has_proper_noun': contains_proper_nouns(sentence)
             })
-        print(sentence_data)
+        print sentence_data
 
 main(train_data.data[:1])
 
