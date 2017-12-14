@@ -1,12 +1,19 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer, TfidfVectorizer
 from nltk.tokenize import sent_tokenize
+<<<<<<< HEAD
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
+=======
+from sklearn.datasets import fetch_20newsgroups
+import math
+>>>>>>> integrates keyword scores to sentence data
 
 from constants import STOPWORDS
+from rake import Rake
 from preprocessor import LancasterTokenizer, pop_subject_from_document
-from sklearn.datasets import fetch_20newsgroups
+
+
 train_data = fetch_20newsgroups(subset='train', remove=('footers', 'quotes'))
 
 
@@ -76,14 +83,28 @@ def contains_proper_nouns(sentence):
             return True
     return False
 
+def get_sentence_keyword_score(document, num_sentences):
+    rake = Rake()
+    keywords = rake.get_keywords(document)
+    ranked_keywords = rake.generate_keyword_rank(keywords)
+    sufficient_keywords_length = int(math.ceil(len(ranked_keywords) / 3.0))
+    sufficient_keywords = ranked_keywords[:sufficient_keywords_length]
+    total_keyword_score = 0.0
+    # value of a keyword is its relative score value divided by the score of all keywords
+    sentence_keyword_score = [0.0] * num_sentences
+    for keyword in sufficient_keywords:
+        total_keyword_score += keyword['score']
+    for keyword in sufficient_keywords:
+        sentence_keyword_score[keyword['sentence_num']] += keyword['score'] / total_keyword_score
+    return sentence_keyword_score
+
+
 def main(documents):
     for document in documents:
         title, body = pop_subject_from_document(document)
-        paragraphs = [p for p in body.split('\n') if p]
-        doc = " ".join(paragraphs)
-        sentences = sent_tokenize(doc)
+        sentences = sent_tokenize(body)
+        sentence_keyword_score = get_sentence_keyword_score(body, len(sentences))
         sentence_data = []
-
         word_tokens = tokenize(sentences)
         sentence_title_similarities = find_title_similarity_measure(title, sentences)
         # start processing different attributes of every sentence
@@ -93,11 +114,13 @@ def main(documents):
         for i, sentence in enumerate(sentences):
             sentence_length = len(sentence) / float(max_sentence_length)
             sentence_pos = (len(sentences) - i) / float(len(sentences))
+            keyword_similarity = sentence_keyword_score[i]
 
             sentence_data.append({
                 'sentence': sentence,
                 'avg_tf_isf': sentence_tf_isf[i],
                 'len_ratio': sentence_length,
+                'keyword_similarity': keyword_similarity,
                 'pos': sentence_pos,
                 'simlarity_to_title': sentence_title_similarities[i],
                 'has_main_concepts': contains_main_concepts(sentence, concepts),

@@ -1,5 +1,7 @@
 STOPWORDS = set([
     ".",
+    ",",
+    "?",
     "a",
     "about",
     "above",
