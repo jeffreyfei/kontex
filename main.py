@@ -1,18 +1,11 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer, TfidfVectorizer
-from nltk.tokenize import sent_tokenize
-<<<<<<< HEAD
-from nltk.tokenize import word_tokenize
-from nltk import pos_tag
-=======
-from sklearn.datasets import fetch_20newsgroups
 import math
->>>>>>> integrates keyword scores to sentence data
-
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
+from sklearn.datasets import fetch_20newsgroups
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk import pos_tag
 from constants import STOPWORDS
 from rake import Rake
 from preprocessor import LancasterTokenizer, pop_subject_from_document
-
 
 train_data = fetch_20newsgroups(subset='train', remove=('footers', 'quotes'))
 
