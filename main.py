@@ -123,7 +123,7 @@ def main(documents):
                 'has_main_concepts': contains_main_concepts(sentence, concepts),
                 'has_proper_noun': contains_proper_nouns(sentence)
             })
-        print sentence_data
+        print(sentence_data)
 
 main(train_data.data[:1])
 
