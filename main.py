@@ -1,19 +1,18 @@
 import math
+
 from copy import deepcopy
 
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
-from sklearn.datasets import fetch_20newsgroups
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from nltk import pos_tag
 
 from rake import Rake
-from preprocessor import LancasterTokenizer, pop_subject_from_document
+from preprocessor import LancasterTokenizer, fetch_datasets
 from pyteaser import Summarize
 
-train_data = fetch_20newsgroups(subset='train', remove=('footers', 'quotes'))
-
+train_data = fetch_datasets()
 
 def tokenize(sentence):
     vectorizer = CountVectorizer(
@@ -144,11 +143,14 @@ def get_summarized_sentences(base_summary, sentences):
 
     return good_sentences
 
-def compute_sentence_data(documents):
+def compute_sentence_data(documents, mode="train"):
     sentence_data = []
     chosen_sentences = []
-    for document in documents:
-        title, body = pop_subject_from_document(document)
+    for doc_num, document in enumerate(documents):
+        if mode == "train":
+            print "training through document {} out of {}".format(doc_num+1, len(document))
+        title = document['header']
+        body = document['body']
         sentences = sent_tokenize(body)
         base_summary = Summarize(title, body)
         chosen_sentences = chosen_sentences + get_summarized_sentences(base_summary, sentences)
@@ -184,11 +186,11 @@ def compute_sentence_data(documents):
 
 def main(documents):
     clf = MultinomialNB()
-    training_data, training_results = compute_sentence_data(documents[:4])
+    training_data, training_results = compute_sentence_data(documents[:2])
     clf=clf.fit(training_data, training_results)
-    test_data, test_results = compute_sentence_data(documents[4:])
+    test_data, test_results = compute_sentence_data(documents[2:3], mode="test")
     print(clf.predict(test_data))
     print(test_results)
 
 
-main(train_data.data[:5])
+main(train_data)

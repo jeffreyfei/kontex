@@ -102,3 +102,5 @@ ENV/
 
 # vim buffer
 *.swp
+
+training_data/
