@@ -17,6 +17,9 @@ The purpose of the model is to grab extractive summaries of a document by rankin
   12. Occurrence of anaphors
   13. Occurrence of non-essential information
   
-We then run this model against a normal extractive summarizer with the [20 news groups dataset](http://qwone.com/~jason/20Newsgroups/) to train it to grab summaries.
+We then run this model against the [textteaser summarizer](http://www.datateaser.com/?textteaser) with the [All the news dataset](https://www.kaggle.com/snapcrack/all-the-news/data) to train it to grab summaries.
 
 This project was made for "human learning of machine learning" - Jeffrey Fei
+
+Todo list:
+1. Host the model on a server to let users test it by inputting a title and body
