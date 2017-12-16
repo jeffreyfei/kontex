@@ -103,4 +103,4 @@ ENV/
 # vim buffer
 *.swp
 
-articles1.csv
+training_data/

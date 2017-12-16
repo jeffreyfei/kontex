@@ -143,10 +143,12 @@ def get_summarized_sentences(base_summary, sentences):
 
     return good_sentences
 
-def compute_sentence_data(documents):
+def compute_sentence_data(documents, mode="train"):
     sentence_data = []
     chosen_sentences = []
-    for document in documents:
+    for doc_num, document in enumerate(documents):
+        if mode == "train":
+            print "training through document {} out of {}".format(doc_num+1, len(document))
         title = document['header']
         body = document['body']
         sentences = sent_tokenize(body)
@@ -184,9 +186,9 @@ def compute_sentence_data(documents):
 
 def main(documents):
     clf = MultinomialNB()
-    training_data, training_results = compute_sentence_data(documents[:95])
+    training_data, training_results = compute_sentence_data(documents[:2])
     clf=clf.fit(training_data, training_results)
-    test_data, test_results = compute_sentence_data(documents[95:])
+    test_data, test_results = compute_sentence_data(documents[2:3], mode="test")
     print(clf.predict(test_data))
     print(test_results)
 

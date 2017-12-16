@@ -14,7 +14,7 @@ def fetch_datasets():
     data = []
     csv.field_size_limit(500 * 1024 * 1024)
     i = 0
-    with open('articles1.csv', 'rb') as csvfile:
+    with open('training_data/articles1.csv', 'rb') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             i += 1
