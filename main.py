@@ -188,7 +188,7 @@ def main(documents):
     clf=clf.fit(training_data, training_results)
     test_data, test_results = compute_sentence_data(documents[4:])
     print(clf.predict(test_data))
-    print test_results
+    print(test_results)
 
 
 main(train_data.data[:5])
