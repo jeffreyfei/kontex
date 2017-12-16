@@ -21,5 +21,5 @@ We then run this model against the [textteaser summarizer](http://www.datateaser
 
 This project was made for "human learning of machine learning" - Jeffrey Fei
 
-Todo list:
+# Todo list:
 1. Host the model on a server to let users test it by inputting a title and body
