@@ -2,7 +2,7 @@
 
 A machine learning summarizer inspired by the study "Automatic Text Summarization Using a Machine Learning Approach" in the [16th Brazilian Symposium on Artificial Intelligence](https://link.springer.com/book/10.1007/3-540-36127-8) Conference in 2002.
 
-The purpose of the model is to grab extractive summaries of a document by ranking sentences, categorized by:
+The purpose of the model is to determine which sentences to form extractive summaries of a document by ranking sentences, categorized by:
   1. Mean-TF-ISF
   2. Sentence Length
   3. Sentence Position
@@ -17,7 +17,7 @@ The purpose of the model is to grab extractive summaries of a document by rankin
   12. Occurrence of anaphors
   13. Occurrence of non-essential information
   
-We then run this model against the [textteaser summarizer](http://www.datateaser.com/?textteaser) with the [All the news dataset](https://www.kaggle.com/snapcrack/all-the-news/data) to train it to grab summaries.
+We then run this model against the [textteaser summarizer](http://www.datateaser.com/?textteaser) with the [All the news dataset](https://www.kaggle.com/snapcrack/all-the-news/data) to train it to learn which sentences to form summaries from.
 
 This project was made for "human learning of machine learning" - Jeffrey Fei
 
