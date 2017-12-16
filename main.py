@@ -48,11 +48,10 @@ def find_max_sentence_length(sentences):
 
 
 def find_title_similarity_measure(title, sentences):
-    tfidf_transformer = TfidfVectorizer()
-    title_and_sentences = [title] + sentences
-    tfidf = tfidf_transformer.fit_transform(title_and_sentences)
-    pairwise_similarity = tfidf * tfidf.T
-    return pairwise_similarity.A[0]
+    cos_sim = []
+    for sentence in sentences:
+        cos_sim.append(get_cos_sim(title, sentence))
+    return cos_sim
 
 def find_main_concepts(sentences):
     word_ranking = {}
