@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from sklearn.datasets import fetch_20newsgroups
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -47,11 +48,10 @@ def find_max_sentence_length(sentences):
 
 
 def find_title_similarity_measure(title, sentences):
-    tfidf_transformer = TfidfVectorizer()
-    title_and_sentences = [title] + sentences
-    tfidf = tfidf_transformer.fit_transform(title_and_sentences)
-    pairwise_similarity = tfidf * tfidf.T
-    return pairwise_similarity.A[0]
+    cos_sim = []
+    for sentence in sentences:
+        cos_sim.append(get_cos_sim(title, sentence))
+    return cos_sim
 
 def find_main_concepts(sentences):
     word_ranking = {}
@@ -95,6 +95,43 @@ def get_sentence_keyword_score(document, num_sentences):
         sentence_keyword_score[keyword['sentence_num']] += keyword['score'] / total_keyword_score
     return sentence_keyword_score
 
+def get_vector_magnitude(vector):
+    sqlSum = 0
+    for i in vector:
+        sqlSum += i ** 2
+    return math.sqrt(sqlSum)
+
+def get_dot_product(v1, v2):
+    dp = 0
+    for i, val in enumerate(v1):
+        dp += val * v2[i]
+    return dp
+
+def get_cos_sim(s1, s2):
+    v1 = {}
+    sent_tok1 = word_tokenize(s1)
+    sent_tok2 = word_tokenize(s2)
+    for word in sent_tok1 + sent_tok2:
+        v1[word] = 0
+    v2 = deepcopy(v1)
+    for word in sent_tok1:
+        v1[word] += 1
+    for word in sent_tok2:
+        v2[word] += 1
+    m1 = get_vector_magnitude(list(v1.values()))
+    m2 = get_vector_magnitude(list(v2.values()))
+    dp = get_dot_product(list(v1.values()), list(v2.values()))
+    return dp / (m1 * m2)
+
+def get_sent_to_doc_raw_sums(sentences):
+    rawSums = []
+    for sentence in sentences:
+        rawSum = 0
+        for other_sent in sentences:
+            if sentence != other_sent:
+                rawSum += get_cos_sim(sentence, other_sent)
+        rawSums.append(rawSum)
+    return rawSums
 
 def main(documents):
     for document in documents:
@@ -104,6 +141,8 @@ def main(documents):
         sentence_data = []
         word_tokens = tokenize(sentences)
         sentence_title_similarities = find_title_similarity_measure(title, sentences)
+        rawSums = get_sent_to_doc_raw_sums(sentences)
+        maxRawSum = max(rawSums)
         # start processing different attributes of every sentence
         sentence_tf_isf = find_avg_tfidf(transform_tfidf(word_tokens).toarray())
         max_sentence_length = find_max_sentence_length(sentences)
@@ -121,7 +160,8 @@ def main(documents):
                 'pos': sentence_pos,
                 'simlarity_to_title': sentence_title_similarities[i],
                 'has_main_concepts': contains_main_concepts(sentence, concepts),
-                'has_proper_noun': contains_proper_nouns(sentence)
+                'has_proper_noun': contains_proper_nouns(sentence),
+                'sent_sent_cohesion': rawSums[i] / maxRawSum
             })
         print(sentence_data)
 
