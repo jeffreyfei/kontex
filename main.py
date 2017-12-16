@@ -1,5 +1,7 @@
 import math
 from copy import deepcopy
+
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from sklearn.datasets import fetch_20newsgroups
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -8,6 +10,7 @@ from nltk import pos_tag
 
 from rake import Rake
 from preprocessor import LancasterTokenizer, pop_subject_from_document
+from pyteaser import Summarize
 
 train_data = fetch_20newsgroups(subset='train', remove=('footers', 'quotes'))
 
@@ -70,15 +73,15 @@ def find_main_concepts(sentences):
 def contains_main_concepts(sentence, concepts):
     for word in word_tokenize(sentence):
         if word in concepts:
-            return True
-    return False
+            return 1.0
+    return 0.0
 
 def contains_proper_nouns(sentence):
     tagged_words = pos_tag(word_tokenize(sentence))
     for tagged_word in tagged_words:
         if tagged_word[1] == 'NNP':
-            return True
-    return False
+            return 1.0
+    return 0.0
 
 def get_sentence_keyword_score(document, num_sentences):
     rake = Rake()
@@ -133,12 +136,24 @@ def get_sent_to_doc_raw_sums(sentences):
         rawSums.append(rawSum)
     return rawSums
 
-def main(documents):
+def get_summarized_sentences(base_summary, sentences):
+    good_sentences = []
+    normalized_summary = [sent.lstrip() for sent in base_summary]
+    for sent in sentences:
+        good_sentences.append(sent.lstrip() in base_summary)
+
+    return good_sentences
+
+def compute_sentence_data(documents):
+    sentence_data = []
+    chosen_sentences = []
     for document in documents:
         title, body = pop_subject_from_document(document)
         sentences = sent_tokenize(body)
+        base_summary = Summarize(title, body)
+        chosen_sentences = chosen_sentences + get_summarized_sentences(base_summary, sentences)
+
         sentence_keyword_score = get_sentence_keyword_score(body, len(sentences))
-        sentence_data = []
         word_tokens = tokenize(sentences)
         sentence_title_similarities = find_title_similarity_measure(title, sentences)
         rawSums = get_sent_to_doc_raw_sums(sentences)
@@ -151,19 +166,29 @@ def main(documents):
             sentence_length = len(sentence) / float(max_sentence_length)
             sentence_pos = (len(sentences) - i) / float(len(sentences))
             keyword_similarity = sentence_keyword_score[i]
+            sent_sent_cohesion = rawSums[i] / maxRawSum
 
-            sentence_data.append({
-                'sentence': sentence,
-                'avg_tf_isf': sentence_tf_isf[i],
-                'len_ratio': sentence_length,
-                'keyword_similarity': keyword_similarity,
-                'pos': sentence_pos,
-                'simlarity_to_title': sentence_title_similarities[i],
-                'has_main_concepts': contains_main_concepts(sentence, concepts),
-                'has_proper_noun': contains_proper_nouns(sentence),
-                'sent_sent_cohesion': rawSums[i] / maxRawSum
-            })
-        print(sentence_data)
+            sentence_data.append([
+                sentence_tf_isf[i],
+                sentence_length,
+                keyword_similarity,
+                sentence_pos,
+                sentence_title_similarities[i],
+                contains_main_concepts(sentence, concepts),
+                contains_proper_nouns(sentence),
+                sent_sent_cohesion
+            ])
 
-main(train_data.data[:1])
 
+    return sentence_data, chosen_sentences
+
+def main(documents):
+    clf = MultinomialNB()
+    training_data, training_results = compute_sentence_data(documents[:4])
+    clf=clf.fit(training_data, training_results)
+    test_data, test_results = compute_sentence_data(documents[4:])
+    print(clf.predict(test_data))
+    print test_results
+
+
+main(train_data.data[:5])
