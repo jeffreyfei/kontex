@@ -1,10 +1,13 @@
 import math
 import sys  
+import pickle
+import numpy as np
 
 from copy import deepcopy
 
 from sklearn import metrics
-from sklearn.naive_bayes import ComplementNB
+from sklearn.naive_bayes import ComplementNB, MultinomialNB
+from sklearn.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -13,9 +16,8 @@ from nltk import pos_tag
 
 from rake import Rake
 from preprocessor import LancasterTokenizer, fetch_datasets, word_filter_tokenize
-from pyteaser import Summarize
 # TODO: combine results of multiple summarizers to improve accuracy
-# from gensim.summarization import summarize as gensim_summarize
+from gensim.summarization import summarize as gensim_summarize
 
 
 # ensure nltk doesn't crash for non-ascii tokens that pass through
@@ -162,10 +164,13 @@ def compute_sentence_data(documents, mode="train"):
     for doc_num, document in enumerate(documents):
         if mode == "train":
             print "training through document {} out of {}".format(doc_num+1, len(documents))
+        if mode == "test":
+            print "predicting the results of document {} out of {}".format(doc_num+1, len(documents))
         title = document['header']
         body = document['body']
         sentences = sent_tokenize(body)
-        base_summary = Summarize(title, body)
+        # base_summary = Summarize(title, body)
+        base_summary = sent_tokenize(gensim_summarize(body))
         chosen_sentences = chosen_sentences + get_summarized_sentences(base_summary, sentences)
 
         sentence_keyword_score = get_sentence_keyword_score(body, len(sentences))
@@ -193,22 +198,60 @@ def compute_sentence_data(documents, mode="train"):
                 contains_proper_nouns(sentence),
                 sent_sent_cohesion
             ]
+            # print ''
+            # print sentence
+            # sent_data = {
+            #     'sent_tf_isf': sentence_tf_isf[i],
+            #     'sentence_length': sentence_length,
+            #     'keyword_similarity': keyword_similarity,
+            #     'sentence_pos': sentence_pos,
+            #     'sentence_title_similarities': sentence_title_similarities[i],
+            #     'contains_main_concepts': contains_main_concepts(sentence, concepts),
+            #     'contains_proper_nouns': contains_proper_nouns(sentence),
+            #     'sentence_cohesion': sent_sent_cohesion,
+            #     'is_chosen': chosen_sentences[i]
+            # }
+            # import pprint
+            # pprint.pprint(sent_data)
             sentence_data.append(sentence_properties)
 
 
     return sentence_data, chosen_sentences
 
-    
-def main(documents):
-    clf = ComplementNB()
-    training_data, training_results = compute_sentence_data(documents[:10])
-    print "classifying training data"
-    clf=clf.fit(training_data, training_results)
-    print "finished training data, computing test data"
-    test_data, test_results = compute_sentence_data(documents[:3], mode="test")
-    predicted = clf.predict(test_data)
-    print(predicted)
-    print(test_results)
-    print(metrics.classification_report(test_results, predicted,target_names=["not picked", "picked"]))
+filename = 'trained_model.sav'
 
-main(train_data)
+def train():
+    clf = ComplementNB(alpha=15)
+    all_data = pickle.load(open('all_data.dat', 'rb'))
+    all_results = pickle.load(open('all_results.dat', 'rb'))
+    x_train = all_data[:700]
+    x_results = all_results[:700]
+    y_train = all_data[700:]
+    y_results = all_results[700:]
+    print "classifying training data"
+    clf=clf.fit(x_train, x_results)
+    print "finished training data, computing test data"
+
+    predicted = clf.predict(y_train)
+    print(metrics.classification_report(y_results, predicted,target_names=["not picked", "picked"]))
+
+    # use gridsearch when fine tuning model
+    # parameters = {
+    #     'fit_prior': (True, False),
+    #     'alpha': (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20),
+    # }
+
+    # grid_clf = GridSearchCV(clf, parameters, n_jobs=1, verbose=1, refit='recall')
+    # grid_clf.fit(x_train, x_results)
+    # print "best score {}".format(grid_clf.best_score_),
+    # print "best params:"
+    # print grid_clf.best_params_
+
+def load_training_test_data(documents):
+    all_data, all_results = compute_sentence_data(documents[0:1000], mode="train")
+    pickle.dump(all_data, open('all_data.dat', 'wb'))
+    pickle.dump(all_results, open('all_results.dat', 'wb'))
+
+
+train()
+# load_training_test_data(train_data)
