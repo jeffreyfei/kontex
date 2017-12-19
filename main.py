@@ -1,16 +1,26 @@
 import math
+import sys  
 
 from copy import deepcopy
 
-from sklearn.naive_bayes import MultinomialNB
+from sklearn import metrics
+from sklearn.naive_bayes import ComplementNB
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
+
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from nltk import pos_tag
 
 from rake import Rake
-from preprocessor import LancasterTokenizer, fetch_datasets
+from preprocessor import LancasterTokenizer, fetch_datasets, word_filter_tokenize
 from pyteaser import Summarize
+# TODO: combine results of multiple summarizers to improve accuracy
+# from gensim.summarization import summarize as gensim_summarize
+
+
+# ensure nltk doesn't crash for non-ascii tokens that pass through
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 train_data = fetch_datasets()
 
@@ -23,7 +33,7 @@ def tokenize(sentence):
     return tags
 
 def transform_tfidf(words):
-    tfidf_transformer = TfidfTransformer()
+    tfidf_transformer = TfidfTransformer(sublinear_tf=True)
     return tfidf_transformer.fit_transform(words)
 
 def find_avg_tfidf(tfisf_array):
@@ -58,7 +68,7 @@ def find_title_similarity_measure(title, sentences):
 def find_main_concepts(sentences):
     word_ranking = {}
     for sentence in sentences:
-        tagged_words = pos_tag(word_tokenize(sentence))
+        tagged_words = pos_tag(word_filter_tokenize(sentence))
         for tagged_word in tagged_words:
             word = tagged_word[0]
             tag = tagged_word[1]
@@ -70,13 +80,13 @@ def find_main_concepts(sentences):
     return sorted(word_ranking, key=word_ranking.get, reverse=True)[:15]
 
 def contains_main_concepts(sentence, concepts):
-    for word in word_tokenize(sentence):
+    for word in word_filter_tokenize(sentence):
         if word in concepts:
             return 1.0
     return 0.0
 
 def contains_proper_nouns(sentence):
-    tagged_words = pos_tag(word_tokenize(sentence))
+    tagged_words = pos_tag(word_filter_tokenize(sentence))
     for tagged_word in tagged_words:
         if tagged_word[1] == 'NNP':
             return 1.0
@@ -86,7 +96,7 @@ def get_sentence_keyword_score(document, num_sentences):
     rake = Rake()
     keywords = rake.get_keywords(document)
     ranked_keywords = rake.generate_keyword_rank(keywords)
-    sufficient_keywords_length = int(math.ceil(len(ranked_keywords) / 3.0))
+    sufficient_keywords_length = int(math.ceil(len(ranked_keywords) / 4.0))
     sufficient_keywords = ranked_keywords[:sufficient_keywords_length]
     total_keyword_score = 0.0
     # value of a keyword is its relative score value divided by the score of all keywords
@@ -111,8 +121,8 @@ def get_dot_product(v1, v2):
 
 def get_cos_sim(s1, s2):
     v1 = {}
-    sent_tok1 = word_tokenize(s1)
-    sent_tok2 = word_tokenize(s2)
+    sent_tok1 = word_filter_tokenize(s1)
+    sent_tok2 = word_filter_tokenize(s2)
     for word in sent_tok1 + sent_tok2:
         v1[word] = 0
     v2 = deepcopy(v1)
@@ -123,7 +133,10 @@ def get_cos_sim(s1, s2):
     m1 = get_vector_magnitude(list(v1.values()))
     m2 = get_vector_magnitude(list(v2.values()))
     dp = get_dot_product(list(v1.values()), list(v2.values()))
-    return dp / (m1 * m2)
+    if m1 == 0 or m2 == 0:
+        return 0
+    else:
+        return dp / (m1 * m2)
 
 def get_sent_to_doc_raw_sums(sentences):
     rawSums = []
@@ -148,7 +161,7 @@ def compute_sentence_data(documents, mode="train"):
     chosen_sentences = []
     for doc_num, document in enumerate(documents):
         if mode == "train":
-            print "training through document {} out of {}".format(doc_num+1, len(document))
+            print "training through document {} out of {}".format(doc_num+1, len(documents))
         title = document['header']
         body = document['body']
         sentences = sent_tokenize(body)
@@ -170,7 +183,7 @@ def compute_sentence_data(documents, mode="train"):
             keyword_similarity = sentence_keyword_score[i]
             sent_sent_cohesion = rawSums[i] / maxRawSum
 
-            sentence_data.append([
+            sentence_properties = [
                 sentence_tf_isf[i],
                 sentence_length,
                 keyword_similarity,
@@ -179,18 +192,23 @@ def compute_sentence_data(documents, mode="train"):
                 contains_main_concepts(sentence, concepts),
                 contains_proper_nouns(sentence),
                 sent_sent_cohesion
-            ])
+            ]
+            sentence_data.append(sentence_properties)
 
 
     return sentence_data, chosen_sentences
 
+    
 def main(documents):
-    clf = MultinomialNB()
-    training_data, training_results = compute_sentence_data(documents[:2])
+    clf = ComplementNB()
+    training_data, training_results = compute_sentence_data(documents[:10])
+    print "classifying training data"
     clf=clf.fit(training_data, training_results)
-    test_data, test_results = compute_sentence_data(documents[2:3], mode="test")
-    print(clf.predict(test_data))
+    print "finished training data, computing test data"
+    test_data, test_results = compute_sentence_data(documents[:3], mode="test")
+    predicted = clf.predict(test_data)
+    print(predicted)
     print(test_results)
-
+    print(metrics.classification_report(test_results, predicted,target_names=["not picked", "picked"]))
 
 main(train_data)
