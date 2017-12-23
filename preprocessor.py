@@ -30,6 +30,6 @@ def fetch_datasets():
             except Exception as e:
                 print "document {} failed to parse".format(i+1)
                 print e
-            if i > 500:
+            if i > 2000:
                 break
     return data
