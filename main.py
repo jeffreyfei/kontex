@@ -1,5 +1,7 @@
 import math
 import sys  
+import os
+import getopt
 import pickle
 import numpy as np
 
@@ -19,6 +21,10 @@ from preprocessor import LancasterTokenizer, fetch_datasets, word_filter_tokeniz
 # TODO: combine results of multiple summarizers to improve accuracy
 from gensim.summarization import summarize as gensim_summarize
 
+
+model_filename = 'trained_model.sav'
+data_filename = "all_data.dat"
+results_filename = "all_results.dat"
 
 # ensure nltk doesn't crash for non-ascii tokens that pass through
 reload(sys)
@@ -158,14 +164,14 @@ def get_summarized_sentences(base_summary, sentences):
 
     return good_sentences
 
-def compute_sentence_data(documents, mode="train"):
+def compute_sentence_data(documents, mode='train'):
     sentence_data = []
     chosen_sentences = []
     for doc_num, document in enumerate(documents):
-        if mode == "train":
-            print "training through document {} out of {}".format(doc_num+1, len(documents))
-        if mode == "test":
-            print "predicting the results of document {} out of {}".format(doc_num+1, len(documents))
+        if mode == 'train':
+            print 'training through document {} out of {}'.format(doc_num+1, len(documents))
+        if mode == 'test':
+            print 'predicting the results of document {} out of {}'.format(doc_num+1, len(documents))
         title = document['header']
         body = document['body']
         sentences = sent_tokenize(body)
@@ -218,22 +224,22 @@ def compute_sentence_data(documents, mode="train"):
 
     return sentence_data, chosen_sentences
 
-filename = 'trained_model.sav'
+def get_local_training_data():
+    all_data = pickle.load(open(data_filename, 'rb'))
+    all_results = pickle.load(open(results_filename, 'rb'))
+    return all_data, all_results
 
 def train():
     clf = ComplementNB(alpha=15)
-    all_data = pickle.load(open('all_data.dat', 'rb'))
-    all_results = pickle.load(open('all_results.dat', 'rb'))
+    all_data, all_results = get_local_training_data()
     x_train = all_data[:700]
     x_results = all_results[:700]
     y_train = all_data[700:]
     y_results = all_results[700:]
-    print "classifying training data"
+    print 'Classifying training data'
     clf=clf.fit(x_train, x_results)
-    print "finished training data, computing test data"
-
-    predicted = clf.predict(y_train)
-    print(metrics.classification_report(y_results, predicted,target_names=["not picked", "picked"]))
+    print 'Finished training data. Saving model to {}'.format(model_filename)
+    pickle.dump(clf, open(model_filename, 'wb'))
 
     # use gridsearch when fine tuning model
     # parameters = {
@@ -243,15 +249,58 @@ def train():
 
     # grid_clf = GridSearchCV(clf, parameters, n_jobs=1, verbose=1, refit='recall')
     # grid_clf.fit(x_train, x_results)
-    # print "best score {}".format(grid_clf.best_score_),
-    # print "best params:"
+    # print 'best score {}'.format(grid_clf.best_score_),
+    # print 'best params:'
     # print grid_clf.best_params_
 
+def test():
+    if not os.path.exists(model_filename):
+        print "Model file does not exist, training new model."
+        train()
+    all_data, all_results = get_local_training_data()
+    x_train = all_data[:700]
+    x_results = all_results[:700]
+    y_train = all_data[700:]
+    y_results = all_results[700:]
+    clf = pickle.load(open(model_filename, 'rb'))
+    predicted = clf.predict(y_train)
+    print(metrics.classification_report(y_results, predicted,target_names=['not picked', 'picked']))
+
 def load_training_test_data(documents):
-    all_data, all_results = compute_sentence_data(documents[0:1000], mode="train")
-    pickle.dump(all_data, open('all_data.dat', 'wb'))
-    pickle.dump(all_results, open('all_results.dat', 'wb'))
+    all_data, all_results = compute_sentence_data(documents[0:1000], mode='train')
+    pickle.dump(all_data, open(data_filename, 'wb'))
+    pickle.dump(all_results, open(results_filename, 'wb'))
 
+def usage():
+    print '=============================== Kontex =====================================\n'
+    print 'An extractive summerizer for furthering human learning of machine learning\n'
+    print 'Usage: python main.py [arguments]\n'
+    print 'Arguments:'
+    print '{:<20}{}'.format('-l, --load', 'Load/update training data')
+    print '{:<20}{}'.format('--test', 'Test trained model')
+    print '{:<20}{}'.format('--train', 'Train model')
+    print '\n'
+    print '============================================================================'
 
-train()
-# load_training_test_data(train_data)
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hl', ['help', 'train', 'test', 'load'])
+    except getopt.GetoptError as err:
+        print str(err)
+        usage()
+        sys.exit(2)
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            usage()
+            sys.exit()
+        elif o == '--train':
+            train()
+        elif o == '--test':
+            test()
+        elif o in ('-l', '--load'):
+            load_training_test_data(train_data)
+        else:
+            assert False, 'Invalid option'
+
+if __name__ == '__main__':
+    main()
