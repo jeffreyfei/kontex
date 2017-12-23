@@ -104,3 +104,6 @@ ENV/
 *.swp
 
 training_data/
+
+# Saved model files
+*.sav
